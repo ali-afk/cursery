@@ -10,6 +10,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraftforge.registries.ForgeRegistries;
 
+import  java.util.function.Supplier;
 import java.util.*;
 
 /**
@@ -143,17 +144,24 @@ public class CurseEnchantmentHelper
       final int levelSum,
       final Map<Enchantment, Integer> newEnchants)
     {
+
+        Supplier<Integer> curseChance = () -> Cursery.config.getCommonConfig().basecursechance;
+        if (Cursery.config.getCommonConfig().curseChanceScales)
+        {
+            curseChance = () -> Math.min(Cursery.config.getCommonConfig().maxCurseChance,
+                    Cursery.config.getCommonConfig().basecursechance + levelSum - (stack.getEnchantmentValue() >> 1));
+        }
+
         // Each level has the same chance, so its the same to apply enchant V vs I to V
         boolean appliedCurse = false;
         for (int i = 0; i < newLevel; i++)
         {
             if (Cursery.config.getCommonConfig().debugTries)
             {
-                Cursery.LOGGER.info("Rolling new curse for " + stack + " addedEnchLevels: " + newLevel + " totalEnchantLevels: " + levelSum + " chance:" + Math.min(75,
-                  Cursery.config.getCommonConfig().basecursechance + levelSum - (stack.getEnchantmentValue() >> 1)));
+                Cursery.LOGGER.info("Rolling new curse for " + stack + " addedEnchLevels: " + newLevel + " totalEnchantLevels: " + levelSum + " chance:" + curseChance.get());
             }
 
-            if (rand.nextInt(100) < Math.min(75, Cursery.config.getCommonConfig().basecursechance + levelSum - (stack.getEnchantmentValue() >> 1)))
+            if (rand.nextInt(100) < curseChance.get())
             {
                 if (Cursery.config.getCommonConfig().debugTries)
                 {
