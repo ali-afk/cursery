@@ -24,7 +24,9 @@ public class CommonConfiguration implements ICommonConfig
     public boolean      showDesc        = true;
     public boolean      visualSuccess   = true;
     public boolean      onlynotechanted = false;
+    public boolean      curseChanceScales = true;
     public int          basecursechance = 5;
+    public int          maxCurseChance = 75;
 
     public CommonConfiguration()
     {
@@ -35,10 +37,10 @@ public class CommonConfiguration implements ICommonConfig
     {
         final JsonObject root = new JsonObject();
 
-        final JsonObject entry = new JsonObject();
-        entry.addProperty("desc:", "Should enchanted books show a hint for curse magic, default:true");
-        entry.addProperty("showDesc", showDesc);
-        root.add("showDesc", entry);
+        final JsonObject entry0 = new JsonObject();
+        entry0.addProperty("desc:", "Should enchanted books show a hint for curse magic, default:true");
+        entry0.addProperty("showDesc", showDesc);
+        root.add("showDesc", entry0);
 
         final JsonObject entry1 = new JsonObject();
         entry1.addProperty("desc:", "Add a curse id here to exclude it from beeing applied. "
@@ -56,18 +58,13 @@ public class CommonConfiguration implements ICommonConfig
         entry2.addProperty("excludeTreasure", excludeTreasure);
         root.add("excludeTreasure", entry2);
 
-        final JsonObject entry7 = new JsonObject();
-        entry7.addProperty("desc:", "Should curses only be applied on enchanting unenchanted items, recommended to increase base chance when enabling, default:false");
-        entry7.addProperty("onlynotechanted", onlynotechanted);
-        root.add("onlynotechanted", entry7);
-
         final JsonObject entry3 = new JsonObject();
-        entry3.addProperty("desc:", "Base curse application chance, scales up the more enchants the item has. Default:5 %");
+        entry3.addProperty("desc:", "Base curse application chance, default:5 %");
         entry3.addProperty("basecursechance", basecursechance);
         root.add("basecursechance", entry3);
 
         final JsonObject entry4 = new JsonObject();
-        entry4.addProperty("desc:", "Whether to log debug messages about curse chances beeing rolled, default = false");
+        entry4.addProperty("desc:", "Whether to log debug messages about curse chances being rolled, default = false");
         entry4.addProperty("debugTries", debugTries);
         root.add("debugTries", entry4);
 
@@ -75,6 +72,23 @@ public class CommonConfiguration implements ICommonConfig
         entry5.addProperty("desc:", "Should enchanting success play a sound and show particles, default:true");
         entry5.addProperty("visualSuccess", visualSuccess);
         root.add("visualSuccess", entry5);
+
+        final JsonObject entry6 = new JsonObject();
+        entry6.addProperty("desc:", "Whether curse chance should scale the more enchantment levels an item has, "
+                + "If FALSE, curseChance = baseCurseChance, default:true");
+        entry6.addProperty("curseChanceScales", curseChanceScales);
+        root.add("curseChanceScales", entry6);
+
+        final JsonObject entry7 = new JsonObject();
+        entry7.addProperty("desc:", "Should curses only be applied on enchanting unenchanted items, recommended to increase base chance when enabling, default:false");
+        entry7.addProperty("onlynotechanted", onlynotechanted);
+        root.add("onlynotechanted", entry7);
+
+        final JsonObject entry8 = new JsonObject();
+        entry8.addProperty("desc:", "Maximum curse application chance, ignored if curseChanceScales is FALSE, default: 75 %");
+        entry8.addProperty("maxCurseChance", maxCurseChance);
+        root.add("maxCurseChance", entry8);
+
 
         return root;
     }
@@ -86,6 +100,8 @@ public class CommonConfiguration implements ICommonConfig
         debugTries = data.get("debugTries").getAsJsonObject().get("debugTries").getAsBoolean();
         visualSuccess = data.get("visualSuccess").getAsJsonObject().get("visualSuccess").getAsBoolean();
         basecursechance = data.get("basecursechance").getAsJsonObject().get("basecursechance").getAsInt();
+        maxCurseChance = data.get("maxCurseChance").getAsJsonObject().get("maxCurseChance").getAsInt();
+        curseChanceScales = data.get("curseChanceScales").getAsJsonObject().get("curseChanceScales").getAsBoolean();
         onlynotechanted = data.get("onlynotechanted").getAsJsonObject().get("onlynotechanted").getAsBoolean();
         excludedCurses = new ArrayList<>();
         for (final JsonElement element : data.get("excludedCurses").getAsJsonObject().get("excludedCurses").getAsJsonArray())
