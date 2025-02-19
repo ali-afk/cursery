@@ -146,15 +146,15 @@ public class CurseEnchantmentHelper
     {
 
         boolean isCurseApplied = false;
-        int curseInterval = Cursery.config.getCommonConfig().curseEveryXLevels;
+        int guaranteedCurseInterval = Cursery.config.getCommonConfig().curseEveryXLevels;
 
         // Checks how many curses in the interval have been passed.
-        // Disables (sets = 0) curseEveryXLevels if it equals 0.
-        int existingCursesPassed = curseInterval == 0 ? 0 : (int) Math.ceil((double) (levelSum + 1) / curseInterval);
-        int totalCursesPassed = curseInterval == 0 ? 0 : (int) Math.floor((double) (levelSum + newLevel) / curseInterval);
-        int cursesToApply = curseInterval == 0 ? 0 : totalCursesPassed - existingCursesPassed + 1;
+        // Only makes a difference when curseEveryXLevels is enabled (i.e > 0)
+        int existingGuaranteedCursesPassed = guaranteedCurseInterval == 0 ? 0 : (int) Math.ceil((double) (levelSum + 1) / guaranteedCurseInterval);
+        int totalGuaranteedCursesPassed = guaranteedCurseInterval == 0 ? 0 : (int) Math.floor((double) (levelSum + newLevel) / guaranteedCurseInterval);
+        int guaranteedCursesToApply = guaranteedCurseInterval == 0 ? 0 : totalGuaranteedCursesPassed - existingGuaranteedCursesPassed + 1;
 
-        if (cursesToApply == 0)
+        if (guaranteedCursesToApply == 0)
         {
             if (Cursery.config.getCommonConfig().debugTries)
                 Cursery.LOGGER.info("CurseEveryXLevels override is FALSE.");
@@ -164,32 +164,42 @@ public class CurseEnchantmentHelper
             if (Cursery.config.getCommonConfig().debugTries)
                 Cursery.LOGGER.info("CurseEveryXLevels override is TRUE.");
 
-            for (int i = 0; i < cursesToApply; i++)
+            for (int i = 0; i < guaranteedCursesToApply; i++)
             {
                 if (Cursery.config.getCommonConfig().debugTries)
                 {
-                    Cursery.LOGGER.info("Rolling new curse for " + stack + " addedEnchLevels: " + newLevel
-                            + " totalEnchantLevels: " + levelSum + " overriden by curseEveryXLevels");
+                    Cursery.LOGGER.info("Rolling new curse for " + stack + " guaranteedCursesToApply: " + guaranteedCursesToApply
+                            + " totalEnchantLevels: " + levelSum + " curseChance overridden by curseEveryXLevels");
                 }
                 isCurseApplied = applyCurseTo(stack, newEnchants);
             }
-            return isCurseApplied;
         }
+
+        // Makes sure the item is not cursed again for each level the guaranteed curse was applied.
+        int levelsLeftToApply = newLevel - guaranteedCursesToApply;
 
         Supplier<Integer> curseChance;
+        int minCurseChance = Cursery.config.getCommonConfig().baseCurseChance - (stack.getEnchantmentValue() >> 1);
+        int curseChanceRange = Cursery.config.getCommonConfig().maxCurseChance - Cursery.config.getCommonConfig().baseCurseChance;
+
         if (Cursery.config.getCommonConfig().curseChanceScales)
         {
-            curseChance = () -> Math.min(Cursery.config.getCommonConfig().maxCurseChance,
-                    Cursery.config.getCommonConfig().baseCurseChance + levelSum - (stack.getEnchantmentValue() >> 1));
+            // Scaling rate varies with the marked number.
+            // Ideally should be kept between -0.0125 <= X <= -0.0175
+            // Anything greater or lower will lead to extremely fast or slow scaling rates respectively.
+            curseChance = () -> (int) Math.ceil(
+                    minCurseChance + curseChanceRange * (1 - Math.exp(/*Important*/-0.015/*Important*/ * levelSum))
+            );
         }
         else
-            curseChance = () -> Cursery.config.getCommonConfig().baseCurseChance;
+            curseChance = () -> minCurseChance;
+
 
         // Each level has the same chance, so its the same to apply enchant V vs I to V
-        for (int i = 0; i < newLevel; i++)
+        for (int i = 0; i < levelsLeftToApply; i++)
         {
             if (Cursery.config.getCommonConfig().debugTries)
-                Cursery.LOGGER.info("Rolling new curse for " + stack + " addedEnchLevels: " + newLevel
+                Cursery.LOGGER.info("Rolling new curse for " + stack + " addedEnchLevels: " + levelsLeftToApply
                         + " totalEnchantLevels: " + levelSum + " chance:" + curseChance.get());
 
             if (rand.nextInt(100) < curseChance.get())
@@ -245,13 +255,15 @@ public class CurseEnchantmentHelper
     {
         for (final Map.Entry<Enchantment, Integer> entry : newEnchants.entrySet())
         {
+            // Makes sure to break (and hence return true) if an existing curse is rolled.
+            if (enchantment == entry.getKey())
+                break;
+
             if (!entry.getKey().isCompatibleWith(enchantment))
             {
                 if (Cursery.config.getCommonConfig().debugTries)
-                {
-                    Cursery.LOGGER.info(
-                      "Curse " + ForgeRegistries.ENCHANTMENTS.getKey(enchantment) + " is not compatible with " + ForgeRegistries.ENCHANTMENTS.getKey(entry.getKey()));
-                }
+                    Cursery.LOGGER.info("Curse " + ForgeRegistries.ENCHANTMENTS.getKey(enchantment) +
+                            " is not compatible with " + ForgeRegistries.ENCHANTMENTS.getKey(entry.getKey()));
 
                 return false;
             }
@@ -304,9 +316,19 @@ public class CurseEnchantmentHelper
         }
 
         ListTag listnbt = stack.getTag().getList("Enchantments", 10);
+
+        // Makes sure to remove nbt tag of the existing curse with its previous level
+        if (level > 1)
+        {
+            CompoundTag compoundnbt = new CompoundTag();
+            compoundnbt.putString("id", String.valueOf((Object) ForgeRegistries.ENCHANTMENTS.getKey(enchantment)));
+            compoundnbt.putShort("lvl", (short) ((byte) level - 1));
+            listnbt.remove(compoundnbt);
+        }
         CompoundTag compoundnbt = new CompoundTag();
         compoundnbt.putString("id", String.valueOf((Object) ForgeRegistries.ENCHANTMENTS.getKey(enchantment)));
         compoundnbt.putShort("lvl", (short) ((byte) level));
+
         listnbt.add(compoundnbt);
     }
 

@@ -81,12 +81,13 @@ public class CommonConfiguration implements ICommonConfig
 
         final JsonObject entry6 = new JsonObject();
         entry6.addProperty("desc:", "Whether curse chance should scale the more enchantment levels an item has, "
-                + "If FALSE, curseChance = baseCurseChance. Default: true");
+                + "If FALSE, curseChance = baseCurseChance - item enchantability. Default: true");
         entry6.addProperty("curseChanceScales", curseChanceScales);
         root.add("curseChanceScales", entry6);
 
         final JsonObject entry7 = new JsonObject();
-        entry7.addProperty("desc:", "Base curse application chance. Default: 5 %");
+        entry7.addProperty("desc:", "Base curse application chance, varies with item enchantability "
+                + "(minCurseChance = base - enchantability). Default: 5 %");
         entry7.addProperty("baseCurseChance", baseCurseChance);
         root.add("baseCurseChance", entry7);
 
