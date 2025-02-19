@@ -146,20 +146,23 @@ public class CurseEnchantmentHelper
     {
 
         boolean isCurseApplied = false;
+        int curseInterval = Cursery.config.getCommonConfig().curseEveryXLevels;
 
-        // CurseEveryXLevels overrides curseChance mechanic
-        if (Cursery.config.getCommonConfig().curseEveryXLevels != 0)
+        // Checks how many curses in the interval have been passed.
+        // Disables (sets = 0) curseEveryXLevels if it equals 0.
+        int existingCursesPassed = curseInterval == 0 ? 0 : (int) Math.ceil((double) (levelSum + 1) / curseInterval);
+        int totalCursesPassed = curseInterval == 0 ? 0 : (int) Math.floor((double) (levelSum + newLevel) / curseInterval);
+        int cursesToApply = curseInterval == 0 ? 0 : totalCursesPassed - existingCursesPassed + 1;
+
+        if (cursesToApply == 0)
         {
             if (Cursery.config.getCommonConfig().debugTries)
-            {
-                Cursery.LOGGER.info("CurseEveryXLevels override is TRUE. Skipping curseChance settings.");
-            }
-
-            int curseInterval = Cursery.config.getCommonConfig().curseEveryXLevels;
-
-            int existingCursesPassed = (int) Math.ceil((double) (levelSum + 1) / curseInterval);
-            int totalCursesPassed = (int) Math.floor((double) (levelSum + newLevel) / curseInterval);
-            int cursesToApply = totalCursesPassed - existingCursesPassed + 1;
+                Cursery.LOGGER.info("CurseEveryXLevels override is FALSE.");
+        }
+        else
+        {
+            if (Cursery.config.getCommonConfig().debugTries)
+                Cursery.LOGGER.info("CurseEveryXLevels override is TRUE.");
 
             for (int i = 0; i < cursesToApply; i++)
             {
@@ -173,31 +176,24 @@ public class CurseEnchantmentHelper
             return isCurseApplied;
         }
 
-        if (Cursery.config.getCommonConfig().debugTries)
-        {
-            Cursery.LOGGER.info("CurseEveryXLevels override is FALSE.");
-        }
-
-        Supplier<Integer> curseChance = () -> Cursery.config.getCommonConfig().baseCurseChance;
+        Supplier<Integer> curseChance;
         if (Cursery.config.getCommonConfig().curseChanceScales)
         {
             curseChance = () -> Math.min(Cursery.config.getCommonConfig().maxCurseChance,
                     Cursery.config.getCommonConfig().baseCurseChance + levelSum - (stack.getEnchantmentValue() >> 1));
         }
+        else
+            curseChance = () -> Cursery.config.getCommonConfig().baseCurseChance;
 
         // Each level has the same chance, so its the same to apply enchant V vs I to V
         for (int i = 0; i < newLevel; i++)
         {
             if (Cursery.config.getCommonConfig().debugTries)
-            {
                 Cursery.LOGGER.info("Rolling new curse for " + stack + " addedEnchLevels: " + newLevel
                         + " totalEnchantLevels: " + levelSum + " chance:" + curseChance.get());
-            }
 
             if (rand.nextInt(100) < curseChance.get())
-            {
                 isCurseApplied = applyCurseTo(stack, newEnchants);
-            }
         }
         return isCurseApplied;
     }
@@ -214,9 +210,7 @@ public class CurseEnchantmentHelper
             final Map<Enchantment, Integer> newEnchants)
     {
         if (Cursery.config.getCommonConfig().debugTries)
-        {
             Cursery.LOGGER.info("Trying to apply curse to: " + stack);
-        }
 
         for (int j = 0; j < 15; j++)
         {
@@ -230,9 +224,7 @@ public class CurseEnchantmentHelper
             if (currentLevel < curse.getMaxLevel() && curse.canEnchant(stack) && isCompatibleWithAll(curse, newEnchants))
             {
                 if (Cursery.config.getCommonConfig().debugTries)
-                {
                     Cursery.LOGGER.info("Applying curse " + ForgeRegistries.ENCHANTMENTS.getKey(curse) + " to: " + stack);
-                }
 
                 enchantManually(stack, curse, currentLevel + 1);
                 newEnchants.put(curse, currentLevel + 1);

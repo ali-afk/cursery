@@ -96,8 +96,8 @@ public class CommonConfiguration implements ICommonConfig
         root.add("maxCurseChance", entry8);
 
         final JsonObject entry9 = new JsonObject();
-        entry9.addProperty("desc:", "Applies a curse every X enchantment levels, disabled if X = 0. "
-                + "Completely disables curseChance settings. Default: 0 ");
+        entry9.addProperty("desc:", "Applies a curse every X enchantment levels, "
+                + "no other curses are applied by curseChance each time this occurs. Disabled if X = 0. Default: 0 ");
         entry9.addProperty("curseEveryXLevels", curseEveryXLevels);
         root.add("curseEveryXLevels", entry9);
 
@@ -160,26 +160,22 @@ public class CommonConfiguration implements ICommonConfig
                     CurseEnchantmentHelper.curseWeightMap.put(enchantmentEntry.getValue(), weight);
                 }
                 else
-                {
                     Cursery.LOGGER.info("Excluding curse: " + ForgeRegistries.ENCHANTMENTS.getKey(enchantmentEntry.getValue()) + " as config disables it");
-                }
             }
         }
 
         if (totalCurseWeight == 0)
-        {
             Cursery.LOGGER.error("Unable to retrieve curses from registry");
-        }
 
         if (baseCurseChance < 0 || baseCurseChance > 100)
         {
-            Cursery.LOGGER.warn(String.format("BaseCurseChance was set to '%d' yet must be within interval 0 <= X <= 100. Setting back to 5.", baseCurseChance));
+            Cursery.LOGGER.warn(String.format("BaseCurseChance was set to '%d' yet must be within the interval 0 <= X <= 100. Setting back to 5.", baseCurseChance));
             baseCurseChance = 5;
         }
 
         if (maxCurseChance < 0 || maxCurseChance > 100)
         {
-            Cursery.LOGGER.warn(String.format("MaxCurseChance was set to '%d' yet must be within interval 0 <= X <= 100. Setting back to 75.", maxCurseChance));
+            Cursery.LOGGER.warn(String.format("MaxCurseChance was set to '%d' yet must be within the interval 0 <= X <= 100. Setting back to 75.", maxCurseChance));
             maxCurseChance = 75;
         }
 
