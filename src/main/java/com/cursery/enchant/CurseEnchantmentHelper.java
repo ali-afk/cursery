@@ -61,7 +61,7 @@ public class CurseEnchantmentHelper
             return false;
         }
 
-        if (!previous.isEmpty() && Cursery.config.getCommonConfig().onlynotechanted)
+        if (!previous.isEmpty() && Cursery.config.getCommonConfig().onlyUnEnchanted)
         {
             return false;
         }
@@ -130,13 +130,13 @@ public class CurseEnchantmentHelper
     }
 
     /**
-     * Rolls the curses and applies them, according to the total level and newly applied level of enchants
+     * Rolls the curses and applies them, according to the total level and newly applied level of enchants.
      *
      * @param stack       item
      * @param newLevel    additional enchant levels added
      * @param levelSum    total sum of existing enchants
-     * @param newEnchants
-     * @return
+     * @param newEnchants new enchantments on the stack
+     * @return true if curse is applied.
      */
     private static boolean rollAndApplyCurseTo(
       final ItemStack stack,
@@ -145,55 +145,100 @@ public class CurseEnchantmentHelper
       final Map<Enchantment, Integer> newEnchants)
     {
 
-        Supplier<Integer> curseChance = () -> Cursery.config.getCommonConfig().basecursechance;
+        Supplier<Integer> curseChance = () -> Cursery.config.getCommonConfig().baseCurseChance;
         if (Cursery.config.getCommonConfig().curseChanceScales)
         {
             curseChance = () -> Math.min(Cursery.config.getCommonConfig().maxCurseChance,
-                    Cursery.config.getCommonConfig().basecursechance + levelSum - (stack.getEnchantmentValue() >> 1));
+                    Cursery.config.getCommonConfig().baseCurseChance + levelSum - (stack.getEnchantmentValue() >> 1));
+        }
+
+        boolean isCurseApplied = false;
+
+        // CurseEveryXLevels overrides curseChance mechanic
+        if (Cursery.config.getCommonConfig().curseEveryXLevels != 0)
+        {
+            if (Cursery.config.getCommonConfig().debugTries)
+            {
+                Cursery.LOGGER.info("CurseEveryXLevels override is TRUE. Skipping curseChance settings.");
+            }
+
+            int curseInterval = Cursery.config.getCommonConfig().curseEveryXLevels;
+            int startStripe = (int) Math.ceil((double) levelSum / curseInterval);
+            int endStripe = (int) Math.floor((double) (levelSum + newLevel) / curseInterval);
+
+            int cursesPassed = Math.max(0, endStripe - startStripe + 1);
+            for (int i = 0; i < cursesPassed; i++)
+            {
+                if (Cursery.config.getCommonConfig().debugTries)
+                {
+                    Cursery.LOGGER.info("Rolling new curse for " + stack + " addedEnchLevels: " + newLevel
+                            + " totalEnchantLevels: " + levelSum + " overriden by curseEveryXLevels");
+                }
+                isCurseApplied = applyCurseTo(stack, newEnchants);
+            }
+            return isCurseApplied;
+        }
+
+        if (Cursery.config.getCommonConfig().debugTries)
+        {
+            Cursery.LOGGER.info("CurseEveryXLevels override is FALSE.");
         }
 
         // Each level has the same chance, so its the same to apply enchant V vs I to V
-        boolean appliedCurse = false;
         for (int i = 0; i < newLevel; i++)
         {
             if (Cursery.config.getCommonConfig().debugTries)
             {
-                Cursery.LOGGER.info("Rolling new curse for " + stack + " addedEnchLevels: " + newLevel + " totalEnchantLevels: " + levelSum + " chance:" + curseChance.get());
+                Cursery.LOGGER.info("Rolling new curse for " + stack + " addedEnchLevels: " + newLevel
+                        + " totalEnchantLevels: " + levelSum + " chance:" + curseChance.get());
             }
 
             if (rand.nextInt(100) < curseChance.get())
             {
-                if (Cursery.config.getCommonConfig().debugTries)
-                {
-                    Cursery.LOGGER.info("Trying to apply curse to: " + stack);
-                }
-
-                for (int j = 0; j < 15; j++)
-                {
-                    final Enchantment curse = getRandomCurse();
-                    if (curse == null)
-                    {
-                        continue;
-                    }
-
-                    final int currentLevel = newEnchants.getOrDefault(curse, 0);
-                    if (currentLevel < curse.getMaxLevel() && curse.canEnchant(stack) && isCompatibleWithAll(curse, newEnchants))
-                    {
-                        if (Cursery.config.getCommonConfig().debugTries)
-                        {
-                            Cursery.LOGGER.info("Applying curse " + ForgeRegistries.ENCHANTMENTS.getKey(curse) + " to: " + stack);
-                        }
-
-                        enchantManually(stack, curse, currentLevel + 1);
-                        newEnchants.put(curse, currentLevel + 1);
-                        appliedCurse = true;
-                        break;
-                    }
-                }
+                isCurseApplied = applyCurseTo(stack, newEnchants);
             }
         }
+        return isCurseApplied;
+    }
 
-        return appliedCurse;
+    /**
+     * Applies curse to item. Helper method to rollAndApplyCurseTo()
+     *
+     * @param stack       item
+     * @param newEnchants new enchantments on the stack
+     * @return true if curse is applied.
+     */
+    private static boolean applyCurseTo(
+            final ItemStack stack,
+            final Map<Enchantment, Integer> newEnchants)
+    {
+        if (Cursery.config.getCommonConfig().debugTries)
+        {
+            Cursery.LOGGER.info("Trying to apply curse to: " + stack);
+        }
+
+        for (int j = 0; j < 15; j++)
+        {
+            final Enchantment curse = getRandomCurse();
+            if (curse == null)
+            {
+                continue;
+            }
+
+            final int currentLevel = newEnchants.getOrDefault(curse, 0);
+            if (currentLevel < curse.getMaxLevel() && curse.canEnchant(stack) && isCompatibleWithAll(curse, newEnchants))
+            {
+                if (Cursery.config.getCommonConfig().debugTries)
+                {
+                    Cursery.LOGGER.info("Applying curse " + ForgeRegistries.ENCHANTMENTS.getKey(curse) + " to: " + stack);
+                }
+
+                enchantManually(stack, curse, currentLevel + 1);
+                newEnchants.put(curse, currentLevel + 1);
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
