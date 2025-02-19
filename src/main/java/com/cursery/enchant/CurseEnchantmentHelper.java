@@ -78,7 +78,7 @@ public class CurseEnchantmentHelper
 
         final List<Integer> addedLevels = new ArrayList<>();
 
-        boolean appliedCurse = false;
+        boolean isCurseApplied = false;
         // Compare enchants
         for (final Map.Entry<Enchantment, Integer> newEnchant : newEnchants.entrySet())
         {
@@ -104,12 +104,12 @@ public class CurseEnchantmentHelper
         {
             if (rollAndApplyCurseTo(stack, newLevel, levelSum - newLevel, newEnchants))
             {
-                appliedCurse = true;
+                isCurseApplied = true;
             }
         }
 
         // Remember it to allow notifying players, particles purple color and a text: The wheel of fortune turns. Ein hauch von schicksal. The dark etc
-        if (appliedCurse)
+        if (isCurseApplied)
         {
             if (stack == notifyStack && notifyPlayer != null)
             {
@@ -126,7 +126,7 @@ public class CurseEnchantmentHelper
             }
         }
 
-        return appliedCurse;
+        return isCurseApplied;
     }
 
     /**
@@ -145,13 +145,6 @@ public class CurseEnchantmentHelper
       final Map<Enchantment, Integer> newEnchants)
     {
 
-        Supplier<Integer> curseChance = () -> Cursery.config.getCommonConfig().baseCurseChance;
-        if (Cursery.config.getCommonConfig().curseChanceScales)
-        {
-            curseChance = () -> Math.min(Cursery.config.getCommonConfig().maxCurseChance,
-                    Cursery.config.getCommonConfig().baseCurseChance + levelSum - (stack.getEnchantmentValue() >> 1));
-        }
-
         boolean isCurseApplied = false;
 
         // CurseEveryXLevels overrides curseChance mechanic
@@ -163,11 +156,12 @@ public class CurseEnchantmentHelper
             }
 
             int curseInterval = Cursery.config.getCommonConfig().curseEveryXLevels;
-            int startStripe = (int) Math.ceil((double) levelSum / curseInterval);
-            int endStripe = (int) Math.floor((double) (levelSum + newLevel) / curseInterval);
 
-            int cursesPassed = Math.max(0, endStripe - startStripe + 1);
-            for (int i = 0; i < cursesPassed; i++)
+            int existingCursesPassed = (int) Math.ceil((double) (levelSum + 1) / curseInterval);
+            int totalCursesPassed = (int) Math.floor((double) (levelSum + newLevel) / curseInterval);
+            int cursesToApply = totalCursesPassed - existingCursesPassed + 1;
+
+            for (int i = 0; i < cursesToApply; i++)
             {
                 if (Cursery.config.getCommonConfig().debugTries)
                 {
@@ -182,6 +176,13 @@ public class CurseEnchantmentHelper
         if (Cursery.config.getCommonConfig().debugTries)
         {
             Cursery.LOGGER.info("CurseEveryXLevels override is FALSE.");
+        }
+
+        Supplier<Integer> curseChance = () -> Cursery.config.getCommonConfig().baseCurseChance;
+        if (Cursery.config.getCommonConfig().curseChanceScales)
+        {
+            curseChance = () -> Math.min(Cursery.config.getCommonConfig().maxCurseChance,
+                    Cursery.config.getCommonConfig().baseCurseChance + levelSum - (stack.getEnchantmentValue() >> 1));
         }
 
         // Each level has the same chance, so its the same to apply enchant V vs I to V

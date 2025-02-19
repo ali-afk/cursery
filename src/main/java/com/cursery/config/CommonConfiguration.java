@@ -62,7 +62,7 @@ public class CommonConfiguration implements ICommonConfig
             list1.add(name);
         }
         entry2.add("excludedCurses", list1);
-        root.add("excludedCurses", entry1);
+        root.add("excludedCurses", entry2);
 
         final JsonObject entry3 = new JsonObject();
         entry3.addProperty("desc:", "Should applying treasure enchants be excluded. Default: false");
@@ -86,9 +86,9 @@ public class CommonConfiguration implements ICommonConfig
         root.add("curseChanceScales", entry6);
 
         final JsonObject entry7 = new JsonObject();
-        entry7.addProperty("desc:", "Base curse application chance. Default:5 %");
-        entry7.addProperty("basecursechance", baseCurseChance);
-        root.add("basecursechance", entry7);
+        entry7.addProperty("desc:", "Base curse application chance. Default: 5 %");
+        entry7.addProperty("baseCurseChance", baseCurseChance);
+        root.add("baseCurseChance", entry7);
 
         final JsonObject entry8 = new JsonObject();
         entry8.addProperty("desc:", "Maximum curse application chance, ignored if curseChanceScales is FALSE. Default: 75 %");
@@ -96,7 +96,7 @@ public class CommonConfiguration implements ICommonConfig
         root.add("maxCurseChance", entry8);
 
         final JsonObject entry9 = new JsonObject();
-        entry9.addProperty("desc:", "Applies a curse every X enchantment levels, disabled if X = 0."
+        entry9.addProperty("desc:", "Applies a curse every X enchantment levels, disabled if X = 0. "
                 + "Completely disables curseChance settings. Default: 0 ");
         entry9.addProperty("curseEveryXLevels", curseEveryXLevels);
         root.add("curseEveryXLevels", entry9);
