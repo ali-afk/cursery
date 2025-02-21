@@ -8,6 +8,7 @@
     "AttributeModifierManagerMixin",
     "EnchantmentHelperMixin",
     "ItemStackMixin",
+    "KintsugiRemixEnchantmentMenuMixin",
     "QuarkEnchanterCompat",
     "QuarkEnchanterTECompat"
   ],

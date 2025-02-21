@@ -317,13 +317,22 @@ public class CurseEnchantmentHelper
 
         ListTag listnbt = stack.getTag().getList("Enchantments", 10);
 
-        // Makes sure to remove nbt tag of the existing curse with its previous level
+        // Makes sure to remove nbt tag of the existing enchantment with its previous level
         if (level > 1)
         {
+            if (Cursery.config.getCommonConfig().debugTries) {
+                Cursery.LOGGER.info("Removing enchantment: " + enchantment.getDescriptionId()
+                        + ",\n with level: " + (level - 1) + " from item to replace it with level: " + level);
+            }
             CompoundTag compoundnbt = new CompoundTag();
             compoundnbt.putString("id", String.valueOf((Object) ForgeRegistries.ENCHANTMENTS.getKey(enchantment)));
             compoundnbt.putShort("lvl", (short) ((byte) level - 1));
             listnbt.remove(compoundnbt);
+        }
+
+        if (Cursery.config.getCommonConfig().debugTries) {
+            Cursery.LOGGER.info("Adding back enchantment: " + enchantment.getDescriptionId()
+                    + ",\n with level: " + level);
         }
         CompoundTag compoundnbt = new CompoundTag();
         compoundnbt.putString("id", String.valueOf((Object) ForgeRegistries.ENCHANTMENTS.getKey(enchantment)));

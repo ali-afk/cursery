@@ -95,6 +95,7 @@ dependencies {
     minecraft "net.minecraftforge:forge:${mc_version}-${forge_version}" //21
     compileOnly(fg.deobf("curse.maven:quarkoddities-301051:3575623"))
     compileOnly(fg.deobf("curse.maven:quark-243121:3919164"))
+    compileOnly(fg.deobf("curse.maven:kintsugi-908206:5229196"))
     implementation(fg.deobf("curse.maven:cupboard-326652:4669193"))
     annotationProcessor "org.spongepowered:mixin:0.8.5:processor"
 }
